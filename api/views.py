@@ -52,6 +52,32 @@ class ProductListCreateView(APIView):
     # permission_classes = [permissions.IsAdminUser]
 
     def get(self, request):
+        queryset = Product.objects.all()
+
+        # -------- Filtering --------
+        category = request.query_params.get('category')  # filter by category name
+        is_available = request.query_params.get('is_available')
+        min_price = request.query_params.get('min_price')
+        max_price = request.query_params.get('max_price')
+        name = request.query_params.get('name')
+
+        if category:
+            queryset = queryset.filter(category__name__iexact=category)
+        if is_available in ['true', 'false']:
+            queryset = queryset.filter(is_available=is_available.lower() == 'true')
+        if min_price:
+            try:
+                queryset = queryset.filter(price__gte=float(min_price))
+            except ValueError:
+                pass  # skip invalid filter
+        if max_price:
+            try:
+                queryset = queryset.filter(price__lte=float(max_price))
+            except ValueError:
+                pass
+        if name:
+            queryset = queryset.filter(name__icontains=name)
+            
         products = Product.objects.all()
         paginator = CustomProductPagination()
         paginated_products = paginator.paginate_queryset(products, request)
